@@ -1,0 +1,14 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# User inputs and generated analysis artifacts
+*.pdf
+* - X3 Analysis/
+X3 Publisher Uploads/
+
+# Generated reports
+analysis.json
+report.html
