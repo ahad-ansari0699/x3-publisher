@@ -52,6 +52,30 @@ def separator_above_footnotes(
     return any(longest_ink_run(row) >= width * 0.12 for row in ink)
 
 
+def find_footnote_separator(gray: np.ndarray) -> int | None:
+    height, width = gray.shape
+    ink = gray < 155
+    start = int(height * 0.60)
+    stop = int(height * 0.90)
+    candidates = [
+        y
+        for y in range(start, stop)
+        if longest_ink_run(ink[y]) >= width * 0.05
+    ]
+    if not candidates:
+        return None
+
+    groups: list[list[int]] = []
+    for y in candidates:
+        if not groups or y > groups[-1][-1] + 1:
+            groups.append([y])
+        else:
+            groups[-1].append(y)
+
+    thin_rules = [group for group in groups if len(group) <= 4]
+    return thin_rules[0][0] if thin_rules else None
+
+
 def detect_regions(
     gray: np.ndarray, lines: list[Box], *, allow_footnotes: bool = True
 ) -> list[Region]:
@@ -82,7 +106,14 @@ def detect_regions(
     ]
 
     footnote_lines: list[Box] = []
-    if allow_footnotes and small_bottom_lines:
+    separator_y = find_footnote_separator(gray) if allow_footnotes else None
+    if separator_y is not None:
+        footnote_lines = [
+            box
+            for box in content_lines
+            if separator_y + 2 < box[1] < height * 0.91
+        ]
+    elif allow_footnotes and small_bottom_lines:
         first_bottom_y = min(box[1] for box in small_bottom_lines)
         preceding = [box for box in content_lines if box[1] < first_bottom_y]
         previous_bottom = max((box[1] + box[3] for box in preceding), default=0)

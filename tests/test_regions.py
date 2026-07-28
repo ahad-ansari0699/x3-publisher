@@ -60,6 +60,17 @@ class RegionDetectionTests(unittest.TestCase):
 
         self.assertNotIn("footnote", [region.kind for region in regions])
 
+    def test_separator_detects_footnotes_with_body_sized_text(self):
+        gray = np.full((1000, 700), 255, dtype=np.uint8)
+        gray[780, 80:180] = 0
+        body = [(80, y, 520, 14) for y in range(160, 700, 34)]
+        footnotes = [(90, 810, 480, 14), (90, 838, 430, 14)]
+
+        regions = detect_regions(gray, body + footnotes)
+
+        by_kind = {region.kind: region for region in regions}
+        self.assertEqual(by_kind["footnote"].line_count, 2)
+
 
 if __name__ == "__main__":
     unittest.main()

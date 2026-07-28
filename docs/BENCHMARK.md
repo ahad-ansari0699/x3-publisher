@@ -74,6 +74,35 @@ each page record.
 This is an initial heuristic baseline. Its remaining footnote candidates need
 human labels before precision and recall can be reported.
 
+## Human-labeled footnote evaluation
+
+Pages 16-55 were visually reviewed at high resolution and labeled for footnote
+presence. The labels live in `benchmarks/deoband-footnotes.json`.
+
+Region detector v2 results:
+
+| Metric | Result |
+| --- | ---: |
+| Labeled pages | 40 |
+| Precision | 100.0% |
+| Recall | 84.6% |
+| F1 | 91.7% |
+| Accuracy | 90.0% |
+| False positives | 0 |
+| False negatives | 4 |
+
+The remaining false negatives are pages 40, 42, 43, and 55. Their separator
+rules are faint or fragmented and need a projection-based or component-based
+rule detector rather than a simple contiguous-pixel threshold.
+
+Run the evaluation with:
+
+```bash
+python scripts/evaluate_regions.py \
+  benchmarks/deoband-footnotes.json \
+  candidate-analysis.json
+```
+
 ## Comparing future runs
 
 ```bash
