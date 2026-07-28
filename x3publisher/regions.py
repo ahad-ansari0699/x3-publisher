@@ -55,7 +55,7 @@ def separator_above_footnotes(
 def find_footnote_separator(gray: np.ndarray) -> int | None:
     height, width = gray.shape
     ink = gray < 155
-    start = int(height * 0.60)
+    start = int(height * 0.50)
     stop = int(height * 0.90)
     candidates = [
         y

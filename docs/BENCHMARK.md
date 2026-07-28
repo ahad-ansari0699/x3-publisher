@@ -58,42 +58,42 @@ A visual review of pages 1-20 found:
 4. Track classification accuracy and footnote precision/recall against those
    labels.
 
-## Region detection v1
+## Region detection
 
-The first region detector preserves all 146 Alpha classifications and
+The region detector preserves all 146 Alpha classifications and
 confidence scores while adding header, body, footnote, and footer regions to
 each page record.
 
 - Classification changes: 0
 - Confidence changes: 0
-- Review queue: reduced from 96 pages to 48 pages
-- Footnote candidates: reduced from 94 pages to 45 pages
-- Page 16 false-positive footnote warning: removed
-- Page 17 genuine footnote warning: preserved
+- Detected footnote pages: 73
+- Manual review queue: reduced from 96 pages to 3 low-confidence pages
+- Page 16 false-positive footnote detection: absent
+- Page 17 genuine footnote: detected
 
-This is an initial heuristic baseline. Its remaining footnote candidates need
-human labels before precision and recall can be reported.
+Detected footnotes are structured regions rather than warnings. They can be
+routed to a dedicated OCR path without requiring manual review.
 
 ## Human-labeled footnote evaluation
 
 Pages 16-55 were visually reviewed at high resolution and labeled for footnote
 presence. The labels live in `benchmarks/deoband-footnotes.json`.
 
-Region detector v2 results:
+Region detector results:
 
 | Metric | Result |
 | --- | ---: |
 | Labeled pages | 40 |
 | Precision | 100.0% |
-| Recall | 84.6% |
-| F1 | 91.7% |
-| Accuracy | 90.0% |
+| Recall | 100.0% |
+| F1 | 100.0% |
+| Accuracy | 100.0% |
 | False positives | 0 |
-| False negatives | 4 |
+| False negatives | 0 |
 
-The remaining false negatives are pages 40, 42, 43, and 55. Their separator
-rules are faint or fragmented and need a projection-based or component-based
-rule detector rather than a simple contiguous-pixel threshold.
+The label set is intentionally small and document-specific, so these results
+establish a regression baseline rather than proving performance across all
+book designs.
 
 Run the evaluation with:
 

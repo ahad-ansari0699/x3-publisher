@@ -71,6 +71,17 @@ class RegionDetectionTests(unittest.TestCase):
         by_kind = {region.kind: region for region in regions}
         self.assertEqual(by_kind["footnote"].line_count, 2)
 
+    def test_separator_can_appear_near_middle_of_page(self):
+        gray = np.full((1000, 700), 255, dtype=np.uint8)
+        gray[540, 80:180] = 0
+        body = [(80, y, 520, 14) for y in range(160, 500, 34)]
+        footnotes = [(90, 580, 480, 12), (90, 610, 430, 12)]
+
+        regions = detect_regions(gray, body + footnotes)
+
+        by_kind = {region.kind: region for region in regions}
+        self.assertEqual(by_kind["footnote"].line_count, 2)
+
 
 if __name__ == "__main__":
     unittest.main()

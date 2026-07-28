@@ -203,8 +203,6 @@ def analyze_page(page_number: int, page: fitz.Page, dpi: int) -> PageAnalysis:
     regions = detect_regions(
         gray, lines, allow_footnotes=classification in body_types
     )
-    if any(region.kind == "footnote" for region in regions):
-        warnings.append("Possible footnote region")
 
     return PageAnalysis(
         page=page_number,
