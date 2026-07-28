@@ -26,6 +26,9 @@ python -m x3publisher.analyzer input.pdf
 
 Use `--output` to choose the analysis directory and `--dpi` to change the render resolution.
 
+See [`docs/BENCHMARK.md`](docs/BENCHMARK.md) for the current analyzer baseline
+and visual-audit findings.
+
 ## Status
 
 Alpha 0.1.1 focuses on pre-OCR analysis. Planned stages are:
