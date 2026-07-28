@@ -11,6 +11,8 @@ import cv2
 import fitz
 import numpy as np
 
+from x3publisher.regions import detect_regions
+
 
 @dataclass
 class PageAnalysis:
@@ -30,6 +32,7 @@ class PageAnalysis:
     classification: str
     confidence: float
     warnings: list[str]
+    regions: list[dict]
     thumbnail: str
 
 
@@ -149,11 +152,6 @@ def classify(
         return "Chapter opening", 0.79, warnings
 
     if len(lines) >= 12:
-        if any(
-            y > height * 0.82 and line_width > width * 0.35
-            for _, y, line_width, _ in lines
-        ):
-            warnings.append("Possible footnote region")
         return "Body text", 0.92, warnings
 
     if len(lines) >= 6:
@@ -201,6 +199,12 @@ def analyze_page(page_number: int, page: fitz.Page, dpi: int) -> PageAnalysis:
     classification, confidence, warnings = classify(
         page_number, rgb, gray, lines, blocks, bbox
     )
+    body_types = {"Body text", "Chapter opening", "Sparse body / section page"}
+    regions = detect_regions(
+        gray, lines, allow_footnotes=classification in body_types
+    )
+    if any(region.kind == "footnote" for region in regions):
+        warnings.append("Possible footnote region")
 
     return PageAnalysis(
         page=page_number,
@@ -219,6 +223,7 @@ def analyze_page(page_number: int, page: fitz.Page, dpi: int) -> PageAnalysis:
         classification=classification,
         confidence=round(confidence, 2),
         warnings=warnings,
+        regions=[region.to_dict() for region in regions],
         thumbnail=thumbnail_data(rgb),
     )
 
@@ -258,6 +263,10 @@ def html_report(pdf_path: Path, pages: list[PageAnalysis], output: Path):
     cards = []
     for page in pages:
         warnings = "".join(f"<li>{warning}</li>" for warning in page.warnings)
+        region_summary = ", ".join(
+            f"{region['kind']} ({region['line_count']} lines)"
+            for region in page.regions
+        )
         cards.append(
             f"""
         <article class="card">
@@ -266,6 +275,7 @@ def html_report(pdf_path: Path, pages: list[PageAnalysis], output: Path):
             <h3>Page {page.page}: {page.classification}</h3>
             <p><strong>Confidence:</strong> {round(page.confidence * 100)}%</p>
             <p><strong>Detected lines:</strong> {page.text_line_count} &nbsp; <strong>blocks:</strong> {page.text_block_count}</p>
+            <p><strong>Regions:</strong> {region_summary or "none"}</p>
             <p><strong>Dark ink:</strong> {page.dark_ink_ratio:.4f} &nbsp; <strong>colour:</strong> {page.colorfulness:.3f}</p>
             {"<ul>" + warnings + "</ul>" if warnings else ""}
           </div>

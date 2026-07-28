@@ -58,6 +58,22 @@ A visual review of pages 1-20 found:
 4. Track classification accuracy and footnote precision/recall against those
    labels.
 
+## Region detection v1
+
+The first region detector preserves all 146 Alpha classifications and
+confidence scores while adding header, body, footnote, and footer regions to
+each page record.
+
+- Classification changes: 0
+- Confidence changes: 0
+- Review queue: reduced from 96 pages to 48 pages
+- Footnote candidates: reduced from 94 pages to 45 pages
+- Page 16 false-positive footnote warning: removed
+- Page 17 genuine footnote warning: preserved
+
+This is an initial heuristic baseline. Its remaining footnote candidates need
+human labels before precision and recall can be reported.
+
 ## Comparing future runs
 
 ```bash

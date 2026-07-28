@@ -74,14 +74,15 @@ class Handler(BaseHTTPRequestHandler):
         output = pdf_path.with_name(pdf_path.stem + " - X3 Analysis")
         cmd = [
             PYTHON,
-            str(ROOT / "x3publisher" / "analyzer.py"),
+            "-m",
+            "x3publisher.analyzer",
             str(pdf_path),
             "-o",
             str(output),
         ]
 
         try:
-            subprocess.run(cmd, check=True)
+            subprocess.run(cmd, check=True, cwd=ROOT)
             report = output / "report.html"
             webbrowser.open(report.as_uri())
             response = f"""<!doctype html><html><body style="font-family:-apple-system,sans-serif;max-width:720px;margin:60px auto">
