@@ -60,7 +60,7 @@ class CleanupTests(unittest.TestCase):
             body,
             "within 40 days, Haji Sahib granted Khilafah. "
             "Mawlana Sahil Bhaghalpuri taught in Saharanpur. "
-            "See Tadhkirat ar-Rashid and Hadrat ke Shuyūkh-o-Akābir.",
+            "See Tadhkirat ar-Rashid and Ḥaḍrat ke Shuyūkh-o-Akābir.",
         )
 
     def test_corrects_all_verified_shuyukh_variants(self):
@@ -94,6 +94,17 @@ class CleanupTests(unittest.TestCase):
             body,
             "MUḤAMMAD TAQĪ ʿUSMĀNĪ Dar al-ʿUlūm Karachi",
         )
+
+    def test_restores_verified_missing_diacritics(self):
+        body, _, changes = clean_page_texts(
+            "Hadrat wrote an article entitled Mufti-i Azam."
+        )
+
+        self.assertEqual(
+            body,
+            "Ḥaḍrat wrote an article entitled Muftī-i Aʿẓam.",
+        )
+        self.assertEqual(changes, ["Ḥaḍrat (1)", "Muftī-i Aʿẓam (1)"])
 
 
 if __name__ == "__main__":

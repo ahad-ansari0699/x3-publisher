@@ -5,6 +5,11 @@ from __future__ import annotations
 import re
 
 GLOSSARY_RULES = (
+    (re.compile(r"\bHadrat\b", re.I), "Ḥaḍrat"),
+    (
+        re.compile(r"\bMufti-i [‘'’ʿ]?(?:Azam|Aẓam|Aʿẓam)\b", re.I),
+        "Muftī-i Aʿẓam",
+    ),
     (
         re.compile(
             r"\bDar[ .]+al-[‘'’ʿ]?(?:Uli+m|Ulum|Ulam|Ulūm)\b",
