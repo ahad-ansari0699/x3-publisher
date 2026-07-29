@@ -32,6 +32,21 @@ and visual-audit findings.
 Generated HTML reports include color-coded overlays for detected headers,
 body text, footnotes, and footers.
 
+## Region-aware OCR preview
+
+After analysis, OCR selected pages while preserving body text and footnotes as
+separate records:
+
+```bash
+python -m x3publisher.ocr book.pdf analysis.json \
+  --pages 16,17,40,48 \
+  --output output/ocr-review/ocr.json \
+  --review output/ocr-review/report.html
+```
+
+The self-contained HTML report places every detected crop beside its recognized
+text so OCR quality and region boundaries can be approved before a full-book run.
+
 ## Status
 
 Alpha 0.1.1 focuses on pre-OCR analysis. Planned stages are:
