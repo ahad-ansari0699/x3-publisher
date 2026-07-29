@@ -19,9 +19,9 @@ import cv2
 import fitz
 import numpy as np
 
-from x3publisher.cleanup import clean_page_texts
+from x3publisher.cleanup import clean_page_texts, normalize_terms, reflow_paragraphs
 
-OCR_KINDS = ("body", "footnote")
+OCR_KINDS = ("body", "footnote", "body_left", "body_right")
 
 
 @dataclass(frozen=True)
@@ -219,7 +219,24 @@ def clean_page_results(
     body = next((result for result in results if result.kind == "body"), None)
     footnote = next((result for result in results if result.kind == "footnote"), None)
     if not body:
-        return results
+        cleaned = []
+        for result in results:
+            text, corrections = normalize_terms(reflow_paragraphs(result.text))
+            cleaned.append(
+                OcrRegionResult(
+                    page=result.page,
+                    kind=result.kind,
+                    bbox=result.bbox,
+                    detector_confidence=result.detector_confidence,
+                    text=text,
+                    raw_text=result.text,
+                    corrections=tuple(corrections),
+                    audit_text=result.audit_text,
+                    agreement=result.agreement,
+                    disagreements=result.disagreements,
+                )
+            )
+        return cleaned
     clean_body, clean_footnote, corrections = clean_page_texts(
         body.text, footnote.text if footnote else ""
     )

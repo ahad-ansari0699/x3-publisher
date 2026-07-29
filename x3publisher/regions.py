@@ -76,8 +76,32 @@ def find_footnote_separator(gray: np.ndarray) -> int | None:
     return thin_rules[0][0] if thin_rules else None
 
 
+def is_two_column_layout(
+    lines: list[Box], width: int, height: int
+) -> bool:
+    content = [
+        box
+        for box in lines
+        if height * 0.10 < box[1] < height * 0.91
+    ]
+    if len(content) < 18:
+        return False
+    narrow = [box for box in content if box[2] <= width * 0.40]
+    left = [box for box in narrow if box[0] < width * 0.35]
+    right = [box for box in narrow if box[0] >= width * 0.48]
+    return (
+        len(narrow) / len(content) >= 0.72
+        and len(left) >= 8
+        and len(right) >= 8
+    )
+
+
 def detect_regions(
-    gray: np.ndarray, lines: list[Box], *, allow_footnotes: bool = True
+    gray: np.ndarray,
+    lines: list[Box],
+    *,
+    allow_footnotes: bool = True,
+    two_columns: bool = False,
 ) -> list[Region]:
     """Detect coarse semantic regions using geometry and relative text scale."""
     height, width = gray.shape
@@ -89,6 +113,27 @@ def detect_regions(
     content_lines = [
         box for box in lines if box not in header_lines and box not in footer_lines
     ]
+
+    if two_columns:
+        left_lines = [
+            box for box in content_lines if box[0] + box[2] / 2 < width * 0.49
+        ]
+        right_lines = [
+            box for box in content_lines if box[0] + box[2] / 2 >= width * 0.49
+        ]
+        regions = []
+        for kind, boxes, confidence in (
+            ("header", header_lines, 0.72),
+            ("body_left", left_lines, 0.93),
+            ("body_right", right_lines, 0.93),
+            ("footer", footer_lines, 0.76),
+        ):
+            bbox = union_box(boxes)
+            if bbox:
+                regions.append(
+                    Region(kind, bbox, confidence, len(boxes))
+                )
+        return regions
 
     main_candidates = [
         box for box in content_lines if height * 0.14 <= box[1] <= height * 0.78

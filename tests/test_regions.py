@@ -2,10 +2,32 @@ import unittest
 
 import numpy as np
 
-from x3publisher.regions import detect_regions
+from x3publisher.regions import detect_regions, is_two_column_layout
 
 
 class RegionDetectionTests(unittest.TestCase):
+    def test_detects_two_column_layout(self):
+        width, height = 1000, 1400
+        lines = []
+        for row in range(12):
+            y = 180 + row * 55
+            lines.extend([(140, y, 300, 18), (540, y, 300, 18)])
+
+        self.assertTrue(is_two_column_layout(lines, width, height))
+        regions = detect_regions(
+            np.full((height, width), 255, dtype=np.uint8),
+            lines,
+            two_columns=True,
+        )
+        self.assertEqual(
+            [region.kind for region in regions],
+            ["body_left", "body_right"],
+        )
+
+    def test_regular_full_width_text_is_not_two_columns(self):
+        lines = [(140, 180 + row * 55, 720, 18) for row in range(20)]
+        self.assertFalse(is_two_column_layout(lines, 1000, 1400))
+
     def test_regular_body_does_not_become_footnote(self):
         gray = np.full((1000, 700), 255, dtype=np.uint8)
         lines = [(80, y, 520, 12) for y in range(160, 860, 32)]

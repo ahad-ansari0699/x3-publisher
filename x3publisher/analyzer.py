@@ -11,7 +11,7 @@ import cv2
 import fitz
 import numpy as np
 
-from x3publisher.regions import detect_regions
+from x3publisher.regions import detect_regions, is_two_column_layout
 
 
 @dataclass
@@ -146,6 +146,9 @@ def classify(
         if short_share > 0.45:
             return "Contents", 0.83, warnings
 
+    if is_two_column_layout(lines, width, height):
+        return "Index", 0.94, warnings
+
     top_lines = [box for box in lines if box[1] < height * 0.38]
     lower_lines = [box for box in lines if box[1] >= height * 0.38]
     if 1 <= len(top_lines) <= 5 and len(lower_lines) >= 8 and page_number > 10:
@@ -201,7 +204,10 @@ def analyze_page(page_number: int, page: fitz.Page, dpi: int) -> PageAnalysis:
     )
     body_types = {"Body text", "Chapter opening", "Sparse body / section page"}
     regions = detect_regions(
-        gray, lines, allow_footnotes=classification in body_types
+        gray,
+        lines,
+        allow_footnotes=classification in body_types,
+        two_columns=classification == "Index",
     )
 
     return PageAnalysis(
