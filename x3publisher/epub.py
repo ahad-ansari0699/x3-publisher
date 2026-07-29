@@ -10,6 +10,7 @@ import uuid
 import zipfile
 from pathlib import Path
 
+from x3publisher.cleanup import normalize_terms
 from x3publisher.ocr import parse_pages
 
 FOOTNOTE_ENTRY = re.compile(r"(?ms)^(\d{1,3})\s+(.+?)(?=^\d{1,3}\s+|\Z)")
@@ -17,13 +18,18 @@ INLINE_REFERENCE = re.compile(r"\[(\d{1,3})\]")
 
 
 def page_xhtml(page: int, regions: list[dict]) -> str:
+    def cleaned_text(region: dict) -> str:
+        # Reapply the current verified glossary at publication time so improved
+        # rules can repair audited OCR without another recognition pass.
+        return normalize_terms(region["text"])[0]
+
     body_parts = [
-        region["text"]
+        cleaned_text(region)
         for region in regions
         if region["kind"] in {"body", "body_left", "body_right"}
     ]
     footnote_text = "\n\n".join(
-        region["text"] for region in regions if region["kind"] == "footnote"
+        cleaned_text(region) for region in regions if region["kind"] == "footnote"
     )
     notes = {
         number: text.strip()

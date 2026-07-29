@@ -53,15 +53,26 @@ class CleanupTests(unittest.TestCase):
         body, _, _ = clean_page_texts(
             "Within 4o days, Haji Sabib granted Kdilafahb. "
             "Mawlana Sahil Bhaghalpiri taught in Saharanpar. "
-            "See Tadbkirat ar-Rashid."
+            "See Tadbkirat ar-Rashid and Hadrat ke Shuyitkb-o-Akabir."
         )
 
         self.assertEqual(
             body,
             "within 40 days, Haji Sahib granted Khilafah. "
             "Mawlana Sahil Bhaghalpuri taught in Saharanpur. "
-            "See Tadhkirat ar-Rashid.",
+            "See Tadhkirat ar-Rashid and Hadrat ke Shuyukh-o-Akabir.",
         )
+
+    def test_corrects_all_verified_shuyukh_variants(self):
+        body, _, changes = clean_page_texts(
+            "Shuyttkh-o-Akabir; Shuyitkb-o-Akabir; Shuyukb-o-Akabir."
+        )
+
+        self.assertEqual(
+            body,
+            "Shuyukh-o-Akabir; Shuyukh-o-Akabir; Shuyukh-o-Akabir.",
+        )
+        self.assertEqual(changes, ["Shuyukh (3)"])
 
 
 if __name__ == "__main__":

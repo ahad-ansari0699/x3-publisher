@@ -23,6 +23,15 @@ class EpubTests(unittest.TestCase):
         self.assertIn('id="note-40-21"', markup)
         self.assertIn('href="#ref-40-21"', markup)
 
+    def test_page_reapplies_latest_verified_glossary(self):
+        markup = page_xhtml(
+            15,
+            [{"kind": "body", "text": "Hadrat ke Shuyitkb-o-Akabir."}],
+        )
+
+        self.assertIn("Shuyukh-o-Akabir", markup)
+        self.assertNotIn("Shuyitkb", markup)
+
     def test_epub_has_valid_container_and_uncompressed_mimetype(self):
         payload = {
             "regions": [{"page": 16, "kind": "body", "text": "Sample text."}]

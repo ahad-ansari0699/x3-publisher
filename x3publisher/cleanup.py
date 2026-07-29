@@ -13,7 +13,11 @@ GLOSSARY_RULES = (
         "Mufti Muhammad Shafi‘",
     ),
     (re.compile(r"(?m)^Thad\b"), "I had"),
-    (re.compile(r"\bKdilafahb\b", re.I), "Khilafah"),
+    (
+        re.compile(r"\bShuy(?:ttkh|itkb|ukb|ukh)(?=-o-Akabir\b)", re.I),
+        "Shuyukh",
+    ),
+    (re.compile(r"\b(?:Kdilafahb|Kbilafah|Khilafab)\b", re.I), "Khilafah"),
     (re.compile(r"\bBhaghalpiri\b", re.I), "Bhaghalpuri"),
     (re.compile(r"\bHaji Sabib\b", re.I), "Haji Sahib"),
     (re.compile(r"\bwithin 4o days\b", re.I), "within 40 days"),
