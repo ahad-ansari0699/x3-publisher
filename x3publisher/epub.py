@@ -21,11 +21,11 @@ INLINE_REFERENCE = re.compile(r"\[(\d{1,3})\]")
 def page_xhtml(page: int, regions: list[dict]) -> str:
     def cleaned_text(region: dict) -> str:
         # Reapply the current verified glossary at publication time so improved
-        # rules can repair audited OCR without another recognition pass. NFD
-        # keeps scholarly diacritics as base glyphs plus CrossInk-supported
-        # combining marks.
+        # rules can repair audited OCR without another recognition pass. NFC
+        # selects the complete scholarly glyphs supplied by the X3Scholar
+        # CrossInk font instead of unsupported combining sequences.
         text = normalize_terms(region["text"])[0]
-        return unicodedata.normalize("NFD", text)
+        return unicodedata.normalize("NFC", text)
 
     body_parts = [
         cleaned_text(region)

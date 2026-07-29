@@ -85,6 +85,16 @@ class CleanupTests(unittest.TestCase):
         )
         self.assertEqual(changes, ["al-Lawḥ al-Maḥfūẓ (2)"])
 
+    def test_corrects_verified_uppercase_signature(self):
+        body, _, _ = clean_page_texts(
+            "MUHAMMAD TAqti ‘USMANT Dar al-‘Ulum Karachi"
+        )
+
+        self.assertEqual(
+            body,
+            "MUḤAMMAD TAQĪ ʿUSMĀNĪ Dar al-ʿUlūm Karachi",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

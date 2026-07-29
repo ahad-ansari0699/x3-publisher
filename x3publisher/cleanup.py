@@ -5,7 +5,13 @@ from __future__ import annotations
 import re
 
 GLOSSARY_RULES = (
-    (re.compile(r"\bDar[ .]+al-[‘'’ʿ]?(?:Uli+m|Ulam|Ulūm)\b", re.I), "Dar al-ʿUlūm"),
+    (
+        re.compile(
+            r"\bDar[ .]+al-[‘'’ʿ]?(?:Uli+m|Ulum|Ulam|Ulūm)\b",
+            re.I,
+        ),
+        "Dar al-ʿUlūm",
+    ),
     (
         re.compile(
             r"\bMufti Muhammad Sha(?:ff|fi)[‘'’]?(?=[\s.,;:!?]|$)", re.I
@@ -24,6 +30,10 @@ GLOSSARY_RULES = (
     (
         re.compile(r"\b(?:al-)?La(?:hw|wh) al-Ma(?:bf|hf)uz\b", re.I),
         "al-Lawḥ al-Maḥfūẓ",
+    ),
+    (
+        re.compile(r"\bMUHAMMAD TAqti [‘'’]?USMANT\b"),
+        "MUḤAMMAD TAQĪ ʿUSMĀNĪ",
     ),
     (re.compile(r"\bBhaghalpiri\b", re.I), "Bhaghalpuri"),
     (re.compile(r"\bHaji Sabib\b", re.I), "Haji Sahib"),
