@@ -1,6 +1,10 @@
 import unittest
 
-from x3publisher.cleanup import clean_page_texts, recover_inline_footnotes
+from x3publisher.cleanup import (
+    clean_page_texts,
+    recover_inline_footnotes,
+    reflow_paragraphs,
+)
 
 
 class CleanupTests(unittest.TestCase):
@@ -32,6 +36,32 @@ class CleanupTests(unittest.TestCase):
 
         self.assertEqual(recovered, body)
         self.assertEqual(changes, [])
+
+    def test_reflows_wrapped_footnote_without_losing_paragraphs(self):
+        text = (
+            "21 One of the found-\ning fathers of the school.\n"
+            "The next sentence continues.\n\n22 A city in India."
+        )
+
+        self.assertEqual(
+            reflow_paragraphs(text),
+            "21 One of the founding fathers of the school. "
+            "The next sentence continues.\n\n22 A city in India.",
+        )
+
+    def test_corrects_verified_italic_transliteration_errors(self):
+        body, _, _ = clean_page_texts(
+            "Within 4o days, Haji Sabib granted Kdilafahb. "
+            "Mawlana Sahil Bhaghalpiri taught in Saharanpar. "
+            "See Tadbkirat ar-Rashid."
+        )
+
+        self.assertEqual(
+            body,
+            "within 40 days, Haji Sahib granted Khilafah. "
+            "Mawlana Sahil Bhaghalpuri taught in Saharanpur. "
+            "See Tadhkirat ar-Rashid.",
+        )
 
 
 if __name__ == "__main__":

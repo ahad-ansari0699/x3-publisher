@@ -13,6 +13,12 @@ GLOSSARY_RULES = (
         "Mufti Muhammad Shafi‘",
     ),
     (re.compile(r"(?m)^Thad\b"), "I had"),
+    (re.compile(r"\bKdilafahb\b", re.I), "Khilafah"),
+    (re.compile(r"\bBhaghalpiri\b", re.I), "Bhaghalpuri"),
+    (re.compile(r"\bHaji Sabib\b", re.I), "Haji Sahib"),
+    (re.compile(r"\bwithin 4o days\b", re.I), "within 40 days"),
+    (re.compile(r"\bSaharanpar\b", re.I), "Saharanpur"),
+    (re.compile(r"\bTadbkirat ar-Rashid\b", re.I), "Tadhkirat ar-Rashid"),
 )
 
 # Tesseract commonly turns small superscript references into stars, apostrophes,
@@ -20,6 +26,24 @@ GLOSSARY_RULES = (
 # ordinary punctuation.
 INLINE_NOTE_MARKER = re.compile(r"(?<=\w)\*(?:[‘'’]|\d)?|(?<=[.!?])\*")
 FOOTNOTE_START = re.compile(r"(?m)^(\d{1,3})\s")
+
+
+def reflow_paragraphs(text: str) -> str:
+    """Remove scan line wraps while retaining real paragraph boundaries."""
+    paragraphs = re.split(r"\n\s*\n", text.strip())
+    reflowed = []
+    for paragraph in paragraphs:
+        lines = [line.strip() for line in paragraph.splitlines() if line.strip()]
+        if not lines:
+            continue
+        joined = lines[0]
+        for line in lines[1:]:
+            if joined.endswith("-") and line[:1].islower():
+                joined = joined[:-1] + line
+            else:
+                joined += " " + line
+        reflowed.append(joined)
+    return "\n\n".join(reflowed)
 
 
 def normalize_terms(text: str) -> tuple[str, list[str]]:
@@ -47,6 +71,8 @@ def recover_inline_footnotes(
 def clean_page_texts(
     body_text: str, footnote_text: str = ""
 ) -> tuple[str, str, list[str]]:
+    body_text = reflow_paragraphs(body_text)
+    footnote_text = reflow_paragraphs(footnote_text)
     body_text, changes = normalize_terms(body_text)
     footnote_text, footnote_changes = normalize_terms(footnote_text)
     body_text, reference_changes = recover_inline_footnotes(body_text, footnote_text)
