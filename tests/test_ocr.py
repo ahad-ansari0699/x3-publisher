@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from x3publisher.ocr import extract_page_regions, parse_pages, scale_bbox
+from x3publisher.ocr import audit_texts, extract_page_regions, parse_pages, scale_bbox
 
 
 class FakeEngine:
@@ -48,6 +48,15 @@ class OcrTests(unittest.TestCase):
         self.assertEqual([result.kind for result in results], ["body", "footnote"])
         self.assertEqual([result.text for result in results], ["body text", "footnote text"])
         self.assertEqual(len(review), 2)
+
+    def test_audit_reports_engine_disagreements(self):
+        agreement, disagreements = audit_texts(
+            "Mawlana Gangohi received Kdilafahb.",
+            "Mawlana Gangohi received Khilafah.",
+        )
+
+        self.assertEqual(agreement, 0.75)
+        self.assertEqual(disagreements, ("kdilafahb ↔ khilafah",))
 
 
 if __name__ == "__main__":

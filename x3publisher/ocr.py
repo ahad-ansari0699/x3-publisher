@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import argparse
 import base64
+import difflib
 import html
 import json
 import shutil
 import subprocess
+import tempfile
+import unicodedata
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Protocol
@@ -30,6 +33,9 @@ class OcrRegionResult:
     text: str
     raw_text: str = ""
     corrections: tuple[str, ...] = ()
+    audit_text: str = ""
+    agreement: float | None = None
+    disagreements: tuple[str, ...] = ()
 
 
 class OcrEngine(Protocol):
@@ -68,6 +74,58 @@ class TesseractEngine:
             message = process.stderr.decode("utf-8", errors="replace").strip()
             raise RuntimeError(f"Tesseract failed: {message}")
         return process.stdout.decode("utf-8", errors="replace").strip()
+
+
+class AppleVisionEngine:
+    def __init__(self):
+        if not shutil.which("swift"):
+            raise RuntimeError("Apple Vision OCR requires Swift on macOS.")
+        self.script = Path(__file__).parents[1] / "scripts" / "macos_vision_ocr.swift"
+
+    def recognize(self, rgb: np.ndarray, kind: str) -> str:
+        del kind
+        with tempfile.NamedTemporaryFile(suffix=".png") as image_file:
+            ok, encoded = cv2.imencode(
+                ".png", cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+            )
+            if not ok:
+                raise RuntimeError("Could not encode Apple Vision OCR region.")
+            image_file.write(encoded.tobytes())
+            image_file.flush()
+            process = subprocess.run(
+                [
+                    "swift",
+                    "-module-cache-path",
+                    "/private/tmp/x3-swift-module-cache",
+                    str(self.script),
+                    image_file.name,
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+        if process.returncode:
+            message = process.stderr.decode("utf-8", errors="replace").strip()
+            raise RuntimeError(f"Apple Vision OCR failed: {message}")
+        observations = json.loads(process.stdout)
+        return "\n".join(item["text"] for item in observations)
+
+
+def audit_texts(primary: str, secondary: str) -> tuple[float, tuple[str, ...]]:
+    def words(value: str) -> list[str]:
+        value = unicodedata.normalize("NFKC", value).casefold()
+        return [word.strip(".,;:!?()[]{}\"“”") for word in value.split()]
+
+    left, right = words(primary), words(secondary)
+    matcher = difflib.SequenceMatcher(a=left, b=right, autojunk=False)
+    disagreements = []
+    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+        if tag != "equal":
+            disagreements.append(
+                f"{' '.join(left[i1:i2]) or '∅'} ↔ "
+                f"{' '.join(right[j1:j2]) or '∅'}"
+            )
+    return round(matcher.ratio(), 4), tuple(disagreements)
 
 
 def parse_pages(value: str) -> set[int]:
@@ -116,7 +174,10 @@ def render_page(page: fitz.Page, dpi: int) -> np.ndarray:
 
 
 def extract_page_regions(
-    rgb: np.ndarray, page_data: dict, engine: OcrEngine
+    rgb: np.ndarray,
+    page_data: dict,
+    engine: OcrEngine,
+    audit_engine: OcrEngine | None = None,
 ) -> tuple[list[OcrRegionResult], list[tuple[OcrRegionResult, np.ndarray]]]:
     height, width = rgb.shape[:2]
     results = []
@@ -132,12 +193,20 @@ def extract_page_regions(
         )
         left, top, right, bottom = bbox
         crop = rgb[top:bottom, left:right]
+        text = engine.recognize(crop, kind)
+        audit_text = audit_engine.recognize(crop, kind) if audit_engine else ""
+        agreement, disagreements = (
+            audit_texts(text, audit_text) if audit_text else (None, ())
+        )
         result = OcrRegionResult(
             page=page_data["page"],
             kind=kind,
             bbox=bbox,
             detector_confidence=float(region["confidence"]),
-            text=engine.recognize(crop, kind),
+            text=text,
+            audit_text=audit_text,
+            agreement=agreement,
+            disagreements=disagreements,
         )
         results.append(result)
         review_items.append((result, crop))
@@ -166,6 +235,9 @@ def clean_page_results(
                 text=text,
                 raw_text=result.text,
                 corrections=tuple(corrections),
+                audit_text=result.audit_text,
+                agreement=result.agreement,
+                disagreements=result.disagreements,
             )
         )
     return cleaned
@@ -202,12 +274,18 @@ def write_review_report(
             if result.corrections
             else ""
         )
+        audit = (
+            f"<p class=\"audit\"><strong>Engine agreement:</strong> "
+            f"{result.agreement * 100:.1f}%</p>"
+            if result.agreement is not None
+            else ""
+        )
         cards.append(
             f"""<article class="card">
   <header><span>Page {result.page}</span><strong>{result.kind.title()}</strong></header>
   <div class="columns">
     <div><h2>Detected region</h2><img src="data:image/jpeg;base64,{data_image(crop)}"></div>
-    <div><h2>Cleaned OCR text</h2>{corrections}<pre>{text}</pre></div>
+    <div><h2>Cleaned OCR text</h2>{audit}{corrections}<pre>{text}</pre></div>
   </div>
 </article>"""
         )
@@ -223,6 +301,7 @@ header{{display:flex;justify-content:space-between;padding:15px 20px;background:
 .columns{{display:grid;grid-template-columns:1fr 1fr;gap:24px;padding:20px}}
 h2{{font-size:14px;text-transform:uppercase;letter-spacing:.08em;color:#667066}}
 .corrections{{background:#eef7f0;border-left:4px solid #28734d;padding:10px 12px}}
+.audit{{background:#fff5dc;border-left:4px solid #b77a00;padding:10px 12px}}
 img{{width:100%;height:auto;border:1px solid #ddd}}pre{{white-space:pre-wrap;line-height:1.55;
 font:15px Georgia,serif;background:#faf9f6;padding:18px;border:1px solid #e2dfd7;border-radius:8px}}
 @media(max-width:850px){{.columns{{grid-template-columns:1fr}}}}
@@ -241,6 +320,7 @@ def run_ocr(
     pages: set[int],
     dpi: int,
     engine: OcrEngine,
+    audit_engine: OcrEngine | None = None,
     review_path: Path | None = None,
 ) -> list[OcrRegionResult]:
     analysis = json.loads(analysis_path.read_text(encoding="utf-8"))
@@ -253,7 +333,7 @@ def run_ocr(
                 raise ValueError(f"Page {page_number} is unavailable.")
             rgb = render_page(document[page_number - 1], dpi)
             page_results, page_review = extract_page_regions(
-                rgb, page_lookup[page_number], engine
+                rgb, page_lookup[page_number], engine, audit_engine
             )
             page_results = clean_page_results(page_results)
             page_review = [
@@ -290,6 +370,11 @@ def main() -> None:
     parser.add_argument("--dpi", type=int, default=300)
     parser.add_argument("--language", default="eng")
     parser.add_argument("--review", type=Path)
+    parser.add_argument(
+        "--vision-audit",
+        action="store_true",
+        help="Compare Tesseract output with local Apple Vision OCR.",
+    )
     args = parser.parse_args()
     results = run_ocr(
         args.pdf,
@@ -298,6 +383,7 @@ def main() -> None:
         parse_pages(args.pages),
         args.dpi,
         TesseractEngine(args.language),
+        AppleVisionEngine() if args.vision_audit else None,
         args.review,
     )
     print(f"OCR complete: {len(results)} regions written to {args.output}")

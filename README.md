@@ -41,11 +41,14 @@ separate records:
 python -m x3publisher.ocr book.pdf analysis.json \
   --pages 16,17,40,48 \
   --output output/ocr-review/ocr.json \
-  --review output/ocr-review/report.html
+  --review output/ocr-review/report.html \
+  --vision-audit
 ```
 
 The self-contained HTML report places every detected crop beside its recognized
 text so OCR quality and region boundaries can be approved before a full-book run.
+On macOS, `--vision-audit` compares Tesseract with Apple's local Vision OCR and
+records their agreement and every differing word group. The book stays on the Mac.
 
 ## Status
 
