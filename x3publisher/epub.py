@@ -6,6 +6,7 @@ import argparse
 import html
 import json
 import re
+import unicodedata
 import uuid
 import zipfile
 from pathlib import Path
@@ -20,8 +21,11 @@ INLINE_REFERENCE = re.compile(r"\[(\d{1,3})\]")
 def page_xhtml(page: int, regions: list[dict]) -> str:
     def cleaned_text(region: dict) -> str:
         # Reapply the current verified glossary at publication time so improved
-        # rules can repair audited OCR without another recognition pass.
-        return normalize_terms(region["text"])[0]
+        # rules can repair audited OCR without another recognition pass. NFD
+        # keeps scholarly diacritics as base glyphs plus CrossInk-supported
+        # combining marks.
+        text = normalize_terms(region["text"])[0]
+        return unicodedata.normalize("NFD", text)
 
     body_parts = [
         cleaned_text(region)

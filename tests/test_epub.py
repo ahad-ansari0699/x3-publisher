@@ -29,8 +29,18 @@ class EpubTests(unittest.TestCase):
             [{"kind": "body", "text": "Hadrat ke Shuyitkb-o-Akabir."}],
         )
 
-        self.assertIn("Shuyukh-o-Akabir", markup)
+        self.assertIn("Shuyu\u0304kh-o-Aka\u0304bir", markup)
         self.assertNotIn("Shuyitkb", markup)
+
+    def test_page_decomposes_scholarly_diacritics_for_crossink(self):
+        markup = page_xhtml(
+            48,
+            [{"kind": "body", "text": "al-Lawḥ al-Maḥfūẓ"}],
+        )
+
+        self.assertIn("Lawh\u0323", markup)
+        self.assertIn("Mah\u0323fu\u0304z\u0323", markup)
+        self.assertNotIn("Lawḥ", markup)
 
     def test_epub_has_valid_container_and_uncompressed_mimetype(self):
         payload = {

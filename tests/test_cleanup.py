@@ -14,7 +14,7 @@ class CleanupTests(unittest.TestCase):
         )
 
         self.assertEqual(
-            body, "I had studied at Dar al-‘Ulum with Mufti Muhammad Shafi‘."
+            body, "I had studied at Dar al-ʿUlūm with Muftī Muḥammad Shafīʿ."
         )
         self.assertTrue(changes)
 
@@ -60,7 +60,7 @@ class CleanupTests(unittest.TestCase):
             body,
             "within 40 days, Haji Sahib granted Khilafah. "
             "Mawlana Sahil Bhaghalpuri taught in Saharanpur. "
-            "See Tadhkirat ar-Rashid and Hadrat ke Shuyukh-o-Akabir.",
+            "See Tadhkirat ar-Rashid and Hadrat ke Shuyūkh-o-Akābir.",
         )
 
     def test_corrects_all_verified_shuyukh_variants(self):
@@ -70,9 +70,20 @@ class CleanupTests(unittest.TestCase):
 
         self.assertEqual(
             body,
-            "Shuyukh-o-Akabir; Shuyukh-o-Akabir; Shuyukh-o-Akabir.",
+            "Shuyūkh-o-Akābir; Shuyūkh-o-Akābir; Shuyūkh-o-Akābir.",
         )
-        self.assertEqual(changes, ["Shuyukh (3)"])
+        self.assertEqual(changes, ["Shuyūkh-o-Akābir (3)"])
+
+    def test_corrects_verified_lawh_variants_with_diacritics(self):
+        body, _, changes = clean_page_texts(
+            "al-Lawh al-Mabfuz and Lahw al-Mahfuz."
+        )
+
+        self.assertEqual(
+            body,
+            "al-Lawḥ al-Maḥfūẓ and al-Lawḥ al-Maḥfūẓ.",
+        )
+        self.assertEqual(changes, ["al-Lawḥ al-Maḥfūẓ (2)"])
 
 
 if __name__ == "__main__":

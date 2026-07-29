@@ -5,19 +5,26 @@ from __future__ import annotations
 import re
 
 GLOSSARY_RULES = (
-    (re.compile(r"\bDar[ .]+al-[‘'’]?(?:Uli+m|Ulam)\b", re.I), "Dar al-‘Ulum"),
+    (re.compile(r"\bDar[ .]+al-[‘'’ʿ]?(?:Uli+m|Ulam|Ulūm)\b", re.I), "Dar al-ʿUlūm"),
     (
         re.compile(
             r"\bMufti Muhammad Sha(?:ff|fi)[‘'’]?(?=[\s.,;:!?]|$)", re.I
         ),
-        "Mufti Muhammad Shafi‘",
+        "Muftī Muḥammad Shafīʿ",
     ),
     (re.compile(r"(?m)^Thad\b"), "I had"),
     (
-        re.compile(r"\bShuy(?:ttkh|itkb|ukb|ukh)(?=-o-Akabir\b)", re.I),
-        "Shuyukh",
+        re.compile(
+            r"\bShuy(?:ttkh|itkb|ukb|ukh|ūkh)-o-Ak(?:abir|ābir)\b",
+            re.I,
+        ),
+        "Shuyūkh-o-Akābir",
     ),
     (re.compile(r"\b(?:Kdilafahb|Kbilafah|Khilafab)\b", re.I), "Khilafah"),
+    (
+        re.compile(r"\b(?:al-)?La(?:hw|wh) al-Ma(?:bf|hf)uz\b", re.I),
+        "al-Lawḥ al-Maḥfūẓ",
+    ),
     (re.compile(r"\bBhaghalpiri\b", re.I), "Bhaghalpuri"),
     (re.compile(r"\bHaji Sabib\b", re.I), "Haji Sahib"),
     (re.compile(r"\bwithin 4o days\b", re.I), "within 40 days"),
