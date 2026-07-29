@@ -16,6 +16,8 @@ import cv2
 import fitz
 import numpy as np
 
+from x3publisher.cleanup import clean_page_texts
+
 OCR_KINDS = ("body", "footnote")
 
 
@@ -26,6 +28,8 @@ class OcrRegionResult:
     bbox: list[int]
     detector_confidence: float
     text: str
+    raw_text: str = ""
+    corrections: tuple[str, ...] = ()
 
 
 class OcrEngine(Protocol):
@@ -140,6 +144,33 @@ def extract_page_regions(
     return results, review_items
 
 
+def clean_page_results(
+    results: list[OcrRegionResult],
+) -> list[OcrRegionResult]:
+    body = next((result for result in results if result.kind == "body"), None)
+    footnote = next((result for result in results if result.kind == "footnote"), None)
+    if not body:
+        return results
+    clean_body, clean_footnote, corrections = clean_page_texts(
+        body.text, footnote.text if footnote else ""
+    )
+    cleaned = []
+    for result in results:
+        text = clean_body if result.kind == "body" else clean_footnote
+        cleaned.append(
+            OcrRegionResult(
+                page=result.page,
+                kind=result.kind,
+                bbox=result.bbox,
+                detector_confidence=result.detector_confidence,
+                text=text,
+                raw_text=result.text,
+                corrections=tuple(corrections),
+            )
+        )
+    return cleaned
+
+
 def data_image(rgb: np.ndarray, max_width: int = 760) -> str:
     if rgb.shape[1] > max_width:
         scale = max_width / rgb.shape[1]
@@ -164,12 +195,19 @@ def write_review_report(
     cards = []
     for result, crop in review_items:
         text = html.escape(result.text) or "[No text recognized]"
+        corrections = (
+            "<p class=\"corrections\"><strong>Automatic corrections:</strong> "
+            + html.escape("; ".join(result.corrections))
+            + "</p>"
+            if result.corrections
+            else ""
+        )
         cards.append(
             f"""<article class="card">
   <header><span>Page {result.page}</span><strong>{result.kind.title()}</strong></header>
   <div class="columns">
     <div><h2>Detected region</h2><img src="data:image/jpeg;base64,{data_image(crop)}"></div>
-    <div><h2>OCR text</h2><pre>{text}</pre></div>
+    <div><h2>Cleaned OCR text</h2>{corrections}<pre>{text}</pre></div>
   </div>
 </article>"""
         )
@@ -184,6 +222,7 @@ border-radius:14px;margin:24px 0;overflow:hidden;box-shadow:0 3px 14px #0000000d
 header{{display:flex;justify-content:space-between;padding:15px 20px;background:#173d32;color:white}}
 .columns{{display:grid;grid-template-columns:1fr 1fr;gap:24px;padding:20px}}
 h2{{font-size:14px;text-transform:uppercase;letter-spacing:.08em;color:#667066}}
+.corrections{{background:#eef7f0;border-left:4px solid #28734d;padding:10px 12px}}
 img{{width:100%;height:auto;border:1px solid #ddd}}pre{{white-space:pre-wrap;line-height:1.55;
 font:15px Georgia,serif;background:#faf9f6;padding:18px;border:1px solid #e2dfd7;border-radius:8px}}
 @media(max-width:850px){{.columns{{grid-template-columns:1fr}}}}
@@ -216,6 +255,11 @@ def run_ocr(
             page_results, page_review = extract_page_regions(
                 rgb, page_lookup[page_number], engine
             )
+            page_results = clean_page_results(page_results)
+            page_review = [
+                (cleaned, crop)
+                for cleaned, (_, crop) in zip(page_results, page_review)
+            ]
             results.extend(page_results)
             review_items.extend(page_review)
     output_path.parent.mkdir(parents=True, exist_ok=True)
