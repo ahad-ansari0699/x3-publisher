@@ -336,12 +336,13 @@ def run_ocr(
                 rgb, page_lookup[page_number], engine, audit_engine
             )
             page_results = clean_page_results(page_results)
-            page_review = [
-                (cleaned, crop)
-                for cleaned, (_, crop) in zip(page_results, page_review)
-            ]
             results.extend(page_results)
-            review_items.extend(page_review)
+            if review_path:
+                page_review = [
+                    (cleaned, crop)
+                    for cleaned, (_, crop) in zip(page_results, page_review)
+                ]
+                review_items.extend(page_review)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(
         json.dumps(
