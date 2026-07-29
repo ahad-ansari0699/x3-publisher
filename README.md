@@ -29,6 +29,9 @@ Use `--output` to choose the analysis directory and `--dpi` to change the render
 See [`docs/BENCHMARK.md`](docs/BENCHMARK.md) for the current analyzer baseline
 and visual-audit findings.
 
+Generated HTML reports include color-coded overlays for detected headers,
+body text, footnotes, and footers.
+
 ## Status
 
 Alpha 0.1.1 focuses on pre-OCR analysis. Planned stages are:

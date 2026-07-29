@@ -226,6 +226,30 @@ def analyze_page(page_number: int, page: fitz.Page, dpi: int) -> PageAnalysis:
     )
 
 
+def region_overlay_html(page: PageAnalysis) -> str:
+    overlays = []
+    for region in page.regions:
+        left, top, right, bottom = region["bbox"]
+        left_percent = max(0.0, min(100.0, left / page.width * 100))
+        top_percent = max(0.0, min(100.0, top / page.height * 100))
+        width_percent = max(
+            0.0, min(100.0 - left_percent, (right - left) / page.width * 100)
+        )
+        height_percent = max(
+            0.0, min(100.0 - top_percent, (bottom - top) / page.height * 100)
+        )
+        kind = region["kind"]
+        label = kind.capitalize()
+        overlays.append(
+            f'<span class="region region-{kind}" data-region="{kind}" '
+            f'title="{label}: {region["line_count"]} lines" '
+            f'style="left:{left_percent:.2f}%;top:{top_percent:.2f}%;'
+            f'width:{width_percent:.2f}%;height:{height_percent:.2f}%">'
+            f"<span>{label}</span></span>"
+        )
+    return "".join(overlays)
+
+
 def html_report(pdf_path: Path, pages: list[PageAnalysis], output: Path):
     from collections import Counter
 
@@ -265,10 +289,14 @@ def html_report(pdf_path: Path, pages: list[PageAnalysis], output: Path):
             f"{region['kind']} ({region['line_count']} lines)"
             for region in page.regions
         )
+        overlays = region_overlay_html(page)
         cards.append(
             f"""
         <article class="card">
-          <img src="data:image/jpeg;base64,{page.thumbnail}" alt="Page {page.page}"/>
+          <div class="thumbnail">
+            <img src="data:image/jpeg;base64,{page.thumbnail}" alt="Page {page.page}"/>
+            {overlays}
+          </div>
           <div>
             <h3>Page {page.page}: {page.classification}</h3>
             <p><strong>Confidence:</strong> {round(page.confidence * 100)}%</p>
@@ -295,7 +323,15 @@ header,.summary{{background:white;border-radius:14px;padding:22px;margin-bottom:
 h1{{margin-top:0}} table{{border-collapse:collapse;width:100%}}td,th{{padding:7px 10px;border-bottom:1px solid #ddd;text-align:left}}
 .grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px}}
 .card{{display:flex;gap:16px;background:white;border-radius:12px;padding:14px;box-shadow:0 2px 10px #0001}}
-.card img{{width:128px;height:auto;align-self:flex-start;border:1px solid #ddd}} .card h3{{margin:0 0 8px;font-size:1rem}}.card p{{margin:4px 0;font-size:.9rem}}
+.thumbnail{{position:relative;width:128px;flex:0 0 128px;align-self:flex-start;line-height:0}}
+.thumbnail img{{display:block;width:100%;height:auto;border:1px solid #ddd;box-sizing:border-box}}
+.region{{position:absolute;box-sizing:border-box;border:1.5px solid;pointer-events:auto}}
+.region span{{position:absolute;left:-1px;top:-11px;padding:1px 3px;font-size:7px;line-height:9px;font-weight:700;color:white;text-transform:uppercase;letter-spacing:.03em}}
+.region-header{{border-color:#2563eb;background:#2563eb12}}.region-header span{{background:#2563eb}}
+.region-body{{border-color:#16a34a;background:#16a34a0d}}.region-body span{{background:#16a34a}}
+.region-footnote{{border-color:#dc2626;background:#dc26261a}}.region-footnote span{{background:#dc2626}}
+.region-footer{{border-color:#9333ea;background:#9333ea12}}.region-footer span{{background:#9333ea}}
+.card h3{{margin:0 0 8px;font-size:1rem}}.card p{{margin:4px 0;font-size:.9rem}}
 code{{background:#eee;padding:2px 5px;border-radius:4px}}
 </style></head>
 <body>
